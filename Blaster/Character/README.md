@@ -23,29 +23,39 @@ FABRIK, AimOffsets, RightHand 변환 사용 여부 결정 등 기타 규칙 기�
 
 이 코드는 ABlasterCharacter 클래스의 생성자 및 메서드를 정의하며, 캐릭터의 초기화 및 다양한 기능을 구현합니다.
 
-### ABlasterCharacter(): 생성자로 클래스의 초기 설정을 수행합니다.
+### ABlasterCharacter(): 
+
+생성자로 클래스의 초기 설정을 수행합니다.
 
 카메라, 위젯, 충돌 박스 등 필요한 컴포넌트를 생성 및 설정
 
 속성 값들을 초기화하고 설정
 
 
-### GetLifetimeReplicatedProps(): 캐릭터 클래스의 네트워크 저장된 속성들을 설정합니다.
+### GetLifetimeReplicatedProps(): 
+
+캐릭터 클래스의 네트워크 저장된 속성들을 설정합니다.
 
 OverlappingWeapon, Health, Shield, bDisableGameplay 등 복제해야 할 속성 설정
 
 
-### OnRep_ReplicatedMovement(): 객체의 복제된 움직임에 응답하여 호출되는 함수입니다.
+### OnRep_ReplicatedMovement(): 
+
+객체의 복제된 움직임에 응답하여 호출되는 함수입니다.
 
 복제된 움직임의 시뮬레이션 작업을 수행합니다.
 
 
-### Elim(bool bPlayerLeftGame): 캐릭터가 사망하거나 게임에서 나갈 경우 호출되는 함수입니다.
+### Elim(bool bPlayerLeftGame): 
+
+캐릭터가 사망하거나 게임에서 나갈 경우 호출되는 함수입니다.
 
 캐릭터를 소멸시키기 전 무기를 드롭하거나 소멸시킵니다.
 
 
-### MulticastElim_Implementation(bool bPlayerLeftGame): Elim 함수에 의해 호출되며, 사망 애니메이션 및 이펙트, 사운드를 재생합니다.
+### MulticastElim_Implementation(bool bPlayerLeftGame): 
+
+Elim 함수에 의해 호출되며, 사망 애니메이션 및 이펙트, 사운드를 재생합니다.
 
 사망후 관련 사운드, 분해 효과, 컴포넌트 제거 등
 
