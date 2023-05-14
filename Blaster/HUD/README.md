@@ -42,40 +42,40 @@ void UOverheadWidget::OnLevelRemovedFromWorld(ULevel* InLevel, UWorld* InWorld):
 
 # ReturnToMainMenu
 
-MenuSetup()
+### MenuSetup()
 
 메인 메뉴로 돌아가기 위한 UI 설정 및 버튼 등록
 
 멀티플레이어 세션 시작과 종료를 처리하는 서브시스템과 연결
 
 
-Initialize()
+### Initialize()
 
 메뉴가 정상적으로 초기화되었는지 확인
 
 
-OnDestroySession(bool bWasSuccessful)
+### OnDestroySession(bool bWasSuccessful)
 
 세션 종료가 완료되면 호스트가 메인 메뉴로 돌아감
 
 세션 종료가 성공하지 못하면 Return 버튼을 사용 가능하게 함
 
 
-MenuTearDown()
+### MenuTearDown()
 
 메뉴에서 나갈 때 설정 및 버튼 바인딩 해제
 
 이벤트 제거 및 입력 모드 설정
 
 
-ReturnButtonClicked()
+### ReturnButtonClicked()
 
 Return 버튼 클릭 시 실행
 
 게임을 나가고 메인 메뉴로 돌아갈 수 있도록 처리
 
 
-OnPlayerLeftGame()
+### OnPlayerLeftGame()
 
 플레이어가 게임에서 나가면 실행
 
