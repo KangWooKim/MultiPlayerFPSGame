@@ -37,3 +37,46 @@ ROLE_SimulatedProxy: 이 역할은 네트워크에서 다른 플레이어의 행
 ROLE_None: 이 역할은 네트워크 역할이 없는 객체에 할당됩니다.
 
 void UOverheadWidget::OnLevelRemovedFromWorld(ULevel* InLevel, UWorld* InWorld): 이 메서드는 특정 레벨이 월드에서 제거될 때 호출됩니다. 이 메서드는 위젯을 부모 위젯에서 제거하고, 상위 클래스의 OnLevelRemovedFromWorld 메서드를 호출하여 추가적인 정리 작업을 수행합니다. 이 메서드는 주로 레벨이 바뀔 때 화면에 표시되는 위젯을 정리하는데 사용됩니다.
+
+---
+
+# ReturnToMainMenu
+
+MenuSetup()
+
+메인 메뉴로 돌아가기 위한 UI 설정 및 버튼 등록
+
+멀티플레이어 세션 시작과 종료를 처리하는 서브시스템과 연결
+
+
+Initialize()
+
+메뉴가 정상적으로 초기화되었는지 확인
+
+
+OnDestroySession(bool bWasSuccessful)
+
+세션 종료가 완료되면 호스트가 메인 메뉴로 돌아감
+
+세션 종료가 성공하지 못하면 Return 버튼을 사용 가능하게 함
+
+
+MenuTearDown()
+
+메뉴에서 나갈 때 설정 및 버튼 바인딩 해제
+
+이벤트 제거 및 입력 모드 설정
+
+
+ReturnButtonClicked()
+
+Return 버튼 클릭 시 실행
+
+게임을 나가고 메인 메뉴로 돌아갈 수 있도록 처리
+
+
+OnPlayerLeftGame()
+
+플레이어가 게임에서 나가면 실행
+
+멀티플레이어 세션을 종료함
