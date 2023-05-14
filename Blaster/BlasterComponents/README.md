@@ -88,6 +88,46 @@ void UCombatComponent::MulticastCancelReload_Implementation(): 이 메서드는 
 
 void UCombatComponent::LocalCancelReload(): 이 메서드는 클라이언트에서 재장전 취소를 처리합니다. 이 메서드는 캐릭터의 현재 상태에 따라 적절한 재장전 취소 방법을 실행합니다.
   
+void UCombatComponent::UpdateAmmoValues: 장착된 무기의 탄창을 채우고, 잔여 탄약을 업데이트하는 역할을 합니다. 또한, HUD에 남은 탄약 수를 업데이트합니다.
+
+void UCombatComponent::UpdateShotgunAmmoValues: 샷건에 대한 탄약 값을 업데이트합니다. 이 메서드는 샷건의 특성 상 한 번에 한 발씩 장전되므로, 매번 탄약을 1 감소시키며 HUD를 업데이트합니다.
+
+void UCombatComponent::OnRep_Grenades: 그레네이드의 수를 HUD에 업데이트합니다.
+
+void UCombatComponent::JumpToShotgunEnd: 애니메이션 인스턴스를 사용해 샷건 장전의 마지막 부분으로 이동합니다.
+
+void UCombatComponent::ThrowGrenadeFinished: 그레네이드를 던지는 행동이 완료되었을 때 호출되어, 전투 상태를 'Unoccupied'로 변경하고, 무기를 다시 손에 장착합니다.
+
+void UCombatComponent::LaunchGrenade: 그레네이드를 던지는 로직을 처리합니다. 서버에 그레네이드 던지기를 요청합니다.
+
+void UCombatComponent::ServerLaunchGrenade_Implementation: 서버에서 그레네이드를 던지는 데 필요한 로직을 구현합니다. 그레네이드 객체를 생성하고, 월드에 스폰시킵니다.
+
+void UCombatComponent::OnRep_CombatState: 전투 상태가 변경될 때마다 호출됩니다. 전투 상태에 따라 적절한 행동을 실행합니다.
+
+void UCombatComponent::HandleReload: 캐릭터가 재장전 애니메이션을 재생합니다.
+
+void UCombatComponent::AmountToReload: 장착된 무기에 필요한 탄약 수를 계산합니다. 무기의 탄창 용량과 잔여 탄약 중에서 적은 것을 반환합니다.
+
+void UCombatComponent::ThrowGrenade: 그레네이드를 던지는 로직을 시작합니다. 그레네이드가 있고, 전투 상태가 'Unoccupied'이며, 무기가 장착되어 있는 경우에만 그레네이드를 던질 수 있습니다.
+
+void UCombatComponent::ServerLaunchGrenade_Implementation(const FVector_NetQuantize& Target): 서버에서 수행되며, 유효한 GrenadeClass와 Character가 있고, Character가 Grenade를 가지고 있을 때, Grenade를 발사합니다. 이 메서드는 Grenade의 시작 위치를 설정하고, 타겟 방향으로 Grenade를 회전시키며, 그 후 Grenade를 생성하고 발사합니다.
+
+void UCombatComponent::OnRep_CombatState(): CombatState의 상태에 따라 다른 액션을 수행하는 메서드입니다. 각 상태(ECS_Reloading, ECS_Unoccupied, ECS_ThrowingGrenade, ECS_SwappingWeapons)에 따라 다른 캐릭터 애니메이션을 재생하거나 다른 액션을 수행합니다.
+
+void UCombatComponent::HandleReload(): 캐릭터가 있는 경우, 캐릭터의 재장전 애니메이션을 실행합니다.
+
+void UCombatComponent::AmountToReload(): 장착된 무기가 있는지 확인하고, 무기의 탄창에 얼마나 많은 탄약이 들어갈 수 있는지 계산합니다. 이 메서드는 탄약을 리로드할 때 얼마나 많은 탄약이 필요한지 결정하는데 사용됩니다.
+
+void UCombatComponent::ThrowGrenade(): Grenade가 있는지 확인하고, 현재 CombatState가 Unoccupied이며 장착 무기가 있는지 확인합니다. 그 후 Grenade를 던지는 상태로 변경하고, 캐릭터가 Grenade 던지는 애니메이션을 재생합니다. 또한, 캐릭터가 서버에 있는지 확인하고, 서버에서 Grenade를 던집니다. 그 후, Grenade의 수를 업데이트하고 HUD를 업데이트합니다.
+
+void UCombatComponent::ServerThrowGrenade_Implementation(): 서버에서 실행되며, Grenade를 던지는 상태로 변경하고, Grenade 던지는 애니메이션을 재생합니다. 그 후 Grenade의 수를 줄이고 HUD를 업데이트합니다.
+
+void UCombatComponent::UpdateHUDGrenades(): Controller를 설정하고, Controller가 있는 경우 Controller에 현재 Grenade 수를 설정합니다.
+
+void UCombatComponent::ShouldSwapWeapons(): 현재 장착된 무기와 보조 무기가 있는지 확인하고, 무기를 교체해야하는지 결정합니다.
+
+void UCombatComponent::ShowAttachedGrenade(bool bShowGrenade): 캐릭터가 Grenade를 가지고 있는 경우, 인자로 받은 값에 따라 Grenade를 보이게 하거나 숨깁니다.
+  
 ---
   
 # LagCompensationComponent.h
