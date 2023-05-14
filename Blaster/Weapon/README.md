@@ -190,3 +190,165 @@ APawn* InstigatorPawn = Cast<APawn>(GetOwner()); 무기 소유자(플레이어)�
 
 ### URocketMovementComponent::HandleImpact(const FHitResult& Hit, float TimeSlice, const FVector& MoveDelta) : 
 로켓이 충격을 받는 경우 처리하는 메서드입니다. 로켓이 중지되지 않도록 이 메서드는 비어있으며, 로켓은 CollisionBox가 충돌 감지할 때만 폭발합니다.
+
+---
+  
+# ShotGun.h
+  
+### AShotgun::FireShotgun(const TArray<FVector_NetQuantize>& HitTargets) : 
+샷건 발사를 처리하는 메서드입니다. 샷건의 각 팔릿에 대해 충돌을 감지하고, 충돌한 캐릭터들에게 상위 데미지가 적용되도록 계산해서 처리합니다.
+
+
+### AShotgun::ShotgunTraceEndWithScatter(const FVector& HitTarget, TArray<FVector_NetQuantize>& HitTargets) : 
+샷건의 팔릿이 퍼지는 형태로 발사되는 경로를 계산하는 메서드입니다. 지정된 거리에서, SphereRadius 범위 내에서 무작위 방향으로 팔릿의 종단점을 생성하여 여러 각도로 퍼지는 샷건 효과를 만듭니다.
+  
+---
+  
+# Weapon.h
+  
+### AWeapon::AWeapon():
+생성자에서 무기 초기화를 처리합니다. 컴포넌트를 추가하고 설정합니다.
+
+
+### EnableCustomDepth(bool bEnable):
+무기의 커스텀 깊이 랜더링을 사용할 것인지 설정합니다.
+
+
+### BeginPlay():
+게임 시작 시 실행되어 무기의 오버랩 및 충돌 이벤트를 설정합니다.
+
+
+### Tick(float DeltaTime):
+무기의 Tick 함수입니다. 현재 비어있습니다.
+
+
+### GetLifetimeReplicatedProps(): 
+무기의 네트워크 속성을 설정합니다.
+
+
+### OnSphereOverlap(), OnSphereEndOverlap(): 
+무기와 다른 캐릭터와의 오버랩 이벤트 처리입니다. 오버랩 중인지 여부를 기록합니다.
+
+
+### SetHUDAmmo(): 
+현재 무기의 탄약을 HUD에 표시합니다.
+
+
+### SpendRound(): 
+무기의 탄약을 소비하고 이를 서버와 동기화합니다.
+
+
+### ClientUpdateAmmo_Implementation(): 
+클라이언트가 탄약 변경 사항을 동기화하는 메서드입니다.
+
+
+### AddAmmo(), ClientAddAmmo_Implementation(): 
+무기의 탄약을 추가하고 이를 서버와 동기화합니다.
+
+
+### OnRep_Owner(): 
+무기의 소유자가 변경될 때 호출되어 상태를 설정합니다.
+
+
+### SetWeaponState(), OnWeaponStateSet(): 
+무기의 상태를 설정하고 무기의 상태에 따라 특정 기능을 실행합니다.
+
+
+### OnPingTooHigh(): 
+핑이 높은 경우 서버 측 재생도 사용하지 않도록 설정합니다.
+
+
+### OnRep_WeaponState(): 
+네트워크에서 무기의 상태가 동기화되면 호출되어 상태 처리 기능을 실행합니다.
+  
+### OnEquipped(): 
+무기를 장착했을 때 호출되는 함수입니다. 픽업 위젯을 숨기고, 무기의 충돌, 중력 및 물리 시뮬레이션을 비활성화합니다. 서브머신건의 경우 특정 설정을 적용하며 필요에 따라 HighPingDelegate에 이벤트를 바인드합니다.
+  
+#### 서브머신건의 경우...
+서브머신건은 다른 무기와 비교하여 몇 가지 특징이 있습니다. 이러한 특징들로 인해 서브 머신건에 관련된 설정을 별도로 적용해야 하는 경우가 있습니다. 서브머신건의 주요 특징은 다음과 같습니다.
+고사속도: 서브머신건은 일반적으로 총알이 빠르게 연속 발사되는 고사속도 무기입니다. 이로 인해 게임에서는 발사 사이의 시간 간격을 짧게 설정해야 합니다.
+탄피 제거: 서브머신건과 같은 자동 소총류의 경우, 총알을 발사할 때마다 탄피가 배출됩니다. 게임 내에서는 이러한 물리적 이펙트를 구현해야 하며, 그에 따른 부하를 관리할 필요가 있습니다.
+반동과 정확도: 서브머신건은 높은 발사 속도 때문에 반동이 심한 편입니다. 게임에서는 이를 고려하여 무기의 반동 효과와 정확도를 조절할 수 있는 매커니즘이 필요합니다.
+고속 발사로 인한 네트워크 영향: 서브머신건은 고사속도 무기로 인해 발사 이벤트가 자주 발생합니다. 온라인 게임에서는 이로 인해 고핑이 발생할 수 있으며, 이에 따라 게임 내에서 적절한 네트워크 대응이 필요합니다.
+이러한 이유로 서브머신건의 경우 특정 설정이 필요합니다. 이러한 설정은 게임 물리 엔진, 애니메이션, 네트워크 최적화 등에 영향을 주게 됩니다.
+
+
+### OnDropped(): 
+무기를 드롭했을 때 호출되는 함수입니다. 충돌 설정을 변경하고, 무기의 프로퍼티 및 위젯을 업데이트합니다. HighPingDelegate 이벤트를 언바인드합니다.
+
+
+### OnEquippedSecondary(): 
+무기를 보조 무기로 장착했을 때 호출되는 함수입니다. 로직은 OnEquipped()와 유사하지만 CustomDepthStencilValue를 다르게 설정합니다.
+
+
+### ShowPickupWidget(bool bShowWidget): 
+픽업 위젯의 가시성을 설정하는 함수입니다.
+
+
+### Fire(const FVector& HitTarget): 
+무기를 발사하는 함수로 발사 애니메이션을 재생하고 탄피를 생성합니다. 한 발을 소모합니다.
+
+
+### Dropped(): 
+무기의 상태를 드롭 상태로 변경하고, 무기의 컴포넌트를 해제하며 소유주 정보를 초기화합니다.
+
+
+### IsEmpty(): 
+무기의 탄약이 비어 있는지 확인하는 함수입니다.
+
+
+### IsFull(): 
+무기의 탄약이 가득 찼는지 확인하는 함수입니다.
+
+
+### TraceEndWithScatter(const FVector& HitTarget): 
+발사 시 퍼지는 트레이스 끝 지점을 계산하는 함수입니다.
+  
+---
+
+# WeaponTypes.h
+  
+이 코드는 무기 유형을 정의하는 열거형(enum)과 무기 관련 상수를 포함하고 있습니다. 각 요소는 다음과 같습니다.
+
+### TRACE_LENGTH: 
+트레이스의 최대 길이를 설정하는 상수입니다. 이 값은 무기가 적용할 충돌 검출 로직과 관련이 있습니다.
+
+
+### CUSTOM_DEPTH_PURPLE, CUSTOM_DEPTH_BLUE, CUSTOM_DEPTH_TAN: 
+각 무기의 사용자 정의 깊이 값을 설정하는 상수입니다. 이 값은 무기와 다른 객체간의 비주얼 레이어를 구분하는 데 사용됩니다.
+#### 사용자 정의 깊이 값(Custom Depth)
+사용자 정의 깊이 값(Custom Depth)은 렌더링 파이프라인에서 객체 간의 Z-순서(깊이)를 구분하는 데 사용되는 값입니다. 이 값은 렌더링 시각화를 위해 대상 오브젝트와 카메라 사이의 거리를 결정하는 방법을 제공합니다.
+비주얼 레이어를 구분하는 것은 게임 내 객체들이 다른 객체들에 덮이지 않고, 올바르게 나타나도록 순서를 조절하는 프로세스를 의미합니다. 사용자 정의 깊이 값을 사용하면 레이어 간의 가시성을 제어하고, 겹치는 렌더링 문제를 해결할 수 있습니다.
+예를 들어, CUSTOM_DEPTH_PURPLE, CUSTOM_DEPTH_BLUE, CUSTOM_DEPTH_TAN 상수를 사용하여 무기를 서로 다른 비주얼 레이어에 배치할 수 있고, 이를 통해 화면에 무기가 올바르게 표시되도록 구현할 수 있습니다. 이러한 방식으로 객체들이 함께 그려질 때 겹치지 않도록 설정할 수 있습니다.
+
+
+### EWeaponType: 
+무기 유형을 나타내는 열거형(enum)입니다. 다양한 종류의 무기를 정의하고 있으며, 각각은 각기 다른 동작과 속성을 가질 수 있습니다.
+
+
+### EWT_AssaultRifle: 
+돌격 소총 무기 유형입니다.
+
+### EWT_RocketLauncher: 
+로켓 발사기 무기 유형입니다.
+
+### EWT_Pistol: 
+권총 무기 유형입니다.
+
+### EWT_SubmachineGun: 
+서브머신건 무기 유형입니다.
+
+### EWT_Shotgun: 
+샷건 무기 유형입니다.
+
+### EWT_SniperRifle: 
+저격소총 무기 유형입니다.
+
+### EWT_GrenadeLauncher: 
+수류탄 발사기 무기 유형입니다.
+
+### EWT_Flag: 
+깃발 무기 유형입니다. 
+
+### EWT_MAX: 
+기본적인 최댓값입니다. 이 값은 배열 초기화 등에서 사용될 수 있습니다.
