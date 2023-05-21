@@ -156,15 +156,15 @@ ShotgunConfirmHit() - 이 메서드는 샷건이 적 캐릭터에게 히트했�
 
 먼저, 각 캐릭터에 대해 헤드박스에 히트가 있는지를 확인합니다. 헤드박스에 히트가 있다면 해당 캐릭터의 헤드샷 카운트를 증가시키고, 그렇지 않다면 새로운 헤드샷 카운트를 시작합니다. 이후, 모든 히트박스의 충돌을 활성화하고 헤드박스의 충돌을 비활성화합니다. 그리고 다시 히트를 확인하여, 히트가 있는 캐릭터의 바디샷 카운트를 증가시키거나 새로운 바디샷 카운트를 시작합니다. 최종적으로 모든 히트박스를 원래 상태로 복구하고 결과를 반환합니다.
   
-CacheBoxPositions() - 이 메서드는 특정 캐릭터의 모든 히트 박스 위치, 회전 및 범위를 캐싱합니다. 이 정보는 FFramePackage 구조체에 저장되며, 나중에 라그 컴펜세이션에 사용됩니다.
+CacheBoxPositions() - 이 메서드는 특정 캐릭터의 모든 히트 박스 위치, 회전 및 범위를 캐싱합니다. 이 정보는 FFramePackage 구조체에 저장되며, 나중에 지연 보상에 사용됩니다.
 
 MoveBoxes() - 이 메서드는 특정 캐릭터의 히트 박스들을 이전에 캐싱된 위치, 회전 및 범위로 이동시킵니다. 이 메서드는 서버가 과거 프레임으로 "되감기"할 때 사용됩니다.
 
-ResetHitBoxes() - 이 메서드는 특정 캐릭터의 히트 박스들을 이전에 캐싱된 위치, 회전 및 범위로 이동시키고, 그 박스들의 충돌을 비활성화합니다. 이는 라그 컴펜세이션 로직이 완료된 후 원래 상태로 돌아갈 때 사용됩니다.
+ResetHitBoxes() - 이 메서드는 특정 캐릭터의 히트 박스들을 이전에 캐싱된 위치, 회전 및 범위로 이동시키고, 그 박스들의 충돌을 비활성화합니다. 이는 지연 보상 로직이 완료된 후 원래 상태로 돌아갈 때 사용됩니다.
 
 EnableCharacterMeshCollision() - 이 메서드는 특정 캐릭터의 메시 충돌을 활성화 또는 비활성화합니다. 이것은 플레이어가 서버와 클라이언트 사이의 타임라인 차이로 인해 충돌을 놓칠 수 있는 상황을 방지하는 데 사용됩니다.
 
-ShowFramePackage() - 이 메서드는 히트 박스들의 위치, 회전 및 범위를 디버그 렌더링으로 표시합니다. 이는 주로 개발 과정에서 라그 컴펜세이션 로직의 정확성을 검사하는 데 사용됩니다.
+ShowFramePackage() - 이 메서드는 히트 박스들의 위치, 회전 및 범위를 디버그 렌더링으로 표시합니다. 이는 주로 개발 과정에서 지연 보상 로직의 정확성을 검사하는 데 사용됩니다.
 
 ServerSideRewind() - 이 메서드는 서버가 특정 시점으로 되감기하여 플레이어가 발사한 투사체가 특정 캐릭터를 맞췄는지 판정합니다.
 
@@ -174,11 +174,11 @@ ShotgunServerSideRewind() - 이 메서드는 서버가 특정 시점으로 되�
   
 GetFrameToCheck(ABlasterCharacter HitCharacter, float HitTime)**: 이 메서드는 서버가 과거의 특정 시점(HitTime)으로 돌아가서 주어진 캐릭터(HitCharacter)의 상태를 검사하려 할 때 해당 시점의 캐릭터 상태를 찾습니다. 이 메서드는 특정 시점의 FFramePackage를 반환하며, 필요한 경우 두 시점 사이를 보간하여 결과를 생성합니다.
 
-ServerScoreRequest_Implementation(ABlasterCharacter HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, float HitTime)**: 이 메서드는 서버가 과거의 특정 시점(HitTime)으로 돌아가서 주어진 캐릭터(HitCharacter)가 특정 위치(HitLocation)에서 발사된 탄환에 맞았는지를 확인합니다. 라그 컴펜세이션을 적용한 후, 실제로 캐릭터가 맞았다면 해당 캐릭터에 데미지를 적용합니다.
+ServerScoreRequest_Implementation(ABlasterCharacter HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, float HitTime)**: 이 메서드는 서버가 과거의 특정 시점(HitTime)으로 돌아가서 주어진 캐릭터(HitCharacter)가 특정 위치(HitLocation)에서 발사된 탄환에 맞았는지를 확인합니다. 지연 보상을 적용한 후, 실제로 캐릭터가 맞았다면 해당 캐릭터에 데미지를 적용합니다.
 
-ProjectileServerScoreRequest_Implementation(ABlasterCharacter HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize100& InitialVelocity, float HitTime)**: 이 메서드는 투사체의 서버 점수 요청을 처리합니다. 이 메서드는 서버가 과거의 특정 시점(HitTime)으로 돌아가서 주어진 캐릭터(HitCharacter)가 특정 위치(HitLocation)에서 발사된 투사체에 맞았는지를 확인합니다. 라그 컴펜세이션을 적용한 후, 실제로 캐릭터가 맞았다면 해당 캐릭터에 데미지를 적용합니다.
+ProjectileServerScoreRequest_Implementation(ABlasterCharacter HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize100& InitialVelocity, float HitTime)**: 이 메서드는 투사체의 서버 점수 요청을 처리합니다. 이 메서드는 서버가 과거의 특정 시점(HitTime)으로 돌아가서 주어진 캐릭터(HitCharacter)가 특정 위치(HitLocation)에서 발사된 투사체에 맞았는지를 확인합니다. 지연 보상을 적용한 후, 실제로 캐릭터가 맞았다면 해당 캐릭터에 데미지를 적용합니다.
 
-ShotgunServerScoreRequest_Implementation(const TArray<ABlasterCharacter>& HitCharacters, const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations, float HitTime)**: 이 메서드는 샷건의 서버 점수 요청을 처리합니다. 이 메서드는 서버가 과거의 특정 시점(HitTime)으로 돌아가서 주어진 캐릭터들(HitCharacters)이 특정 위치들(HitLocations)에서 발사된 샷건 탄에 맞았는지를 확인합니다. 라그 컴펜세이션을 적용한 후, 실제로 캐릭터가 맞았다면 해당 캐릭터에 데미지를 적용합니다.
+ShotgunServerScoreRequest_Implementation(const TArray<ABlasterCharacter>& HitCharacters, const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations, float HitTime)**: 이 메서드는 샷건의 서버 점수 요청을 처리합니다. 이 메서드는 서버가 과거의 특정 시점(HitTime)으로 돌아가서 주어진 캐릭터들(HitCharacters)이 특정 위치들(HitLocations)에서 발사된 샷건 탄에 맞았는지를 확인합니다. 지연 보상을 적용한 후, 실제로 캐릭터가 맞았다면 해당 캐릭터에 데미지를 적용합니다.
 
 TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction ThisTickFunction)**: 이 메서드는 각 틱마다 컴포넌트의 상태를 업데이트합니다. 이 경우에는 각 틱마다 새로운 프레임 패키지를 저장합니다.
 
