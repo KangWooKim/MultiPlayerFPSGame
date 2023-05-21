@@ -27,8 +27,8 @@
 
 # ElimAnnouncement.h
 
-### void UElimAnnouncement::SetElimAnnouncementText(FString AttackerName, FString VictimName): 이 메서드는 공격자와 피해자의 이름을 인수로 받아, "AttackerName elimmed VictimName!" 
-형식의 문자열을 생성합니다. 이 문자열은 이벤트 위젯의 'AnnouncementText'에 설정되어, 화면에 표시됩니다.
+### void UElimAnnouncement::SetElimAnnouncementText(FString AttackerName, FString VictimName): 
+이 메서드는 공격자와 피해자의 이름을 인수로 받아, "AttackerName elimmed VictimName!" 형식의 문자열을 생성합니다. 이 문자열은 이벤트 위젯의 'AnnouncementText'에 설정되어, 화면에 표시됩니다.
 즉, 이 메서드는 특정 플레이어가 다른 플레이어를 제거한 이벤트가 발생했을 때, 해당 정보를 화면에 표시하는 역할을 합니다. 해당 이벤트를 처리하는 위젯의 텍스트를 업데이트하므로, 게임 플레이어는 어떤 플레이어가 다른 플레이어를 제거했는지를 확인할 수 있습니다.
 
 ---
