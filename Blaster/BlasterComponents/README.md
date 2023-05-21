@@ -132,3 +132,56 @@ void UCombatComponent::ShowAttachedGrenade(bool bShowGrenade): 캐릭터가 Gren
   
 # LagCompensationComponent.h
   
+이 클래스는 주로 네트워크 지연(Lag) 보상을 처리하기 위해 사용됩니다.
+
+ULagCompensationComponent() - 이것은 클래스의 생성자입니다. PrimaryComponentTick.bCanEverTick = true; 라인은 이 컴포넌트가 틱 이벤트(게임 엔진이 한 프레임을 그리기 위한 주요 루프)를 받을 수 있도록 설정합니다.
+
+BeginPlay() - 이 메서드는 액터가 게임에서 시작되면 호출됩니다. 현재로서는 부모 클래스인 Super::BeginPlay()만 호출하고 있습니다.
+
+InterpBetweenFrames() - 이 메서드는 두 프레임 패키지 사이를 보간하는 데 사용됩니다. 이는 주로 두 프레임 사이에서 객체의 위치와 회전을 보간하여 그 사이에 발생한 움직임을 재현하거나 예측하는 데 사용됩니다.
+
+ConfirmHit() - 이 메서드는 플레이어가 히트박스에 물리적 피해를 입혔는지 확인하는 데 사용됩니다. 해당 피해가 유효한지 여부를 결정하고, 피해가 발생했을 경우 해당 정보를 반환합니다.
+
+먼저, 'head'라는 이름의 히트박스(일반적으로 캐릭터의 머리를 대표)의 충돌을 활성화하고, 충돌 채널을 설정합니다. 그런 다음 LineTraceSingleByChannel() 메서드를 사용하여 발사선을 그립니다. 이는 캐릭터의 'head' 히트박스에 히트가 있는지 확인하기 위한 것입니다. 히트가 발견되면 해당 정보를 반환하고 메서드를 종료합니다.
+
+만약 'head' 히트박스에 히트가 없다면, 모든 다른 히트박스의 충돌을 활성화하고, 다시 한 번 선을 그려서 어떤 히트박스에 히트가 있는지 확인합니다. 히트가 있다면 해당 정보를 반환하고 메서드를 종료합니다.
+
+마지막으로, 만약 어떠한 히트박스에도 히트가 없다면, 메서드는 히트가 없음을 반환하고 종료됩니다.
+  
+ProjectileConfirmHit() - 이 메서드는 투사체가 블래스터 캐릭터에 맞았는지를 확인하는 로직을 담당합니다. 이는 플레이어가 발사한 투사체가 목표물을 정확하게 맞췄는지를 판정하는 역할을 수행합니다.
+
+투사체 경로의 예측을 위해 UGameplayStatics::PredictProjectilePath() 함수를 사용하고 있습니다. 이 함수는 주어진 파라미터에 따라 투사체의 경로를 예측하고, 그 경로에 있는 오브젝트와의 충돌 여부를 반환합니다. 'head' 히트박스에 히트가 있다면, 히트 정보를 반환하고 메서드를 종료합니다. 'head' 히트박스에 히트가 없다면, 다른 모든 히트박스의 충돌을 활성화하고 다시 한번 투사체 경로를 예측합니다. 만약 이번에 히트가 있다면, 해당 정보를 반환하고, 그렇지 않다면 히트가 없음을 반환합니다.
+
+ShotgunConfirmHit() - 이 메서드는 샷건이 적 캐릭터에게 히트했는지를 확인하는 로직을 담당합니다. 샷건은 여러 발의 샷(탄환)을 동시에 발사하므로, 여러 캐릭터에 대한 히트를 처리해야 합니다.
+
+먼저, 각 캐릭터에 대해 헤드박스에 히트가 있는지를 확인합니다. 헤드박스에 히트가 있다면 해당 캐릭터의 헤드샷 카운트를 증가시키고, 그렇지 않다면 새로운 헤드샷 카운트를 시작합니다. 이후, 모든 히트박스의 충돌을 활성화하고 헤드박스의 충돌을 비활성화합니다. 그리고 다시 히트를 확인하여, 히트가 있는 캐릭터의 바디샷 카운트를 증가시키거나 새로운 바디샷 카운트를 시작합니다. 최종적으로 모든 히트박스를 원래 상태로 복구하고 결과를 반환합니다.
+  
+CacheBoxPositions() - 이 메서드는 특정 캐릭터의 모든 히트 박스 위치, 회전 및 범위를 캐싱합니다. 이 정보는 FFramePackage 구조체에 저장되며, 나중에 라그 컴펜세이션에 사용됩니다.
+
+MoveBoxes() - 이 메서드는 특정 캐릭터의 히트 박스들을 이전에 캐싱된 위치, 회전 및 범위로 이동시킵니다. 이 메서드는 서버가 과거 프레임으로 "되감기"할 때 사용됩니다.
+
+ResetHitBoxes() - 이 메서드는 특정 캐릭터의 히트 박스들을 이전에 캐싱된 위치, 회전 및 범위로 이동시키고, 그 박스들의 충돌을 비활성화합니다. 이는 라그 컴펜세이션 로직이 완료된 후 원래 상태로 돌아갈 때 사용됩니다.
+
+EnableCharacterMeshCollision() - 이 메서드는 특정 캐릭터의 메시 충돌을 활성화 또는 비활성화합니다. 이것은 플레이어가 서버와 클라이언트 사이의 타임라인 차이로 인해 충돌을 놓칠 수 있는 상황을 방지하는 데 사용됩니다.
+
+ShowFramePackage() - 이 메서드는 히트 박스들의 위치, 회전 및 범위를 디버그 렌더링으로 표시합니다. 이는 주로 개발 과정에서 라그 컴펜세이션 로직의 정확성을 검사하는 데 사용됩니다.
+
+ServerSideRewind() - 이 메서드는 서버가 특정 시점으로 되감기하여 플레이어가 발사한 투사체가 특정 캐릭터를 맞췄는지 판정합니다.
+
+ProjectileServerSideRewind() - 이 메서드는 서버가 특정 시점으로 되감기하여 플레이어가 발사한 투사체가 특정 캐릭터를 맞췄는지 판정합니다. 이 메서드는 투사체의 초기 속도를 고려하여 좀 더 복잡한 투사체 경로를 계산할 수 있습니다.
+
+ShotgunServerSideRewind() - 이 메서드는 서버가 특정 시점으로 되감기하여 플레이어가 발사한 샷건 탄이 여러 캐릭터를 맞췄는지 판정합니다. 이 메서드는 여러 히트 위치를 고려하여 여러 캐릭터에 대한 히트 판정을 수행할 수 있습니다.
+  
+GetFrameToCheck(ABlasterCharacter HitCharacter, float HitTime)**: 이 메서드는 서버가 과거의 특정 시점(HitTime)으로 돌아가서 주어진 캐릭터(HitCharacter)의 상태를 검사하려 할 때 해당 시점의 캐릭터 상태를 찾습니다. 이 메서드는 특정 시점의 FFramePackage를 반환하며, 필요한 경우 두 시점 사이를 보간하여 결과를 생성합니다.
+
+ServerScoreRequest_Implementation(ABlasterCharacter HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize& HitLocation, float HitTime)**: 이 메서드는 서버가 과거의 특정 시점(HitTime)으로 돌아가서 주어진 캐릭터(HitCharacter)가 특정 위치(HitLocation)에서 발사된 탄환에 맞았는지를 확인합니다. 라그 컴펜세이션을 적용한 후, 실제로 캐릭터가 맞았다면 해당 캐릭터에 데미지를 적용합니다.
+
+ProjectileServerScoreRequest_Implementation(ABlasterCharacter HitCharacter, const FVector_NetQuantize& TraceStart, const FVector_NetQuantize100& InitialVelocity, float HitTime)**: 이 메서드는 투사체의 서버 점수 요청을 처리합니다. 이 메서드는 서버가 과거의 특정 시점(HitTime)으로 돌아가서 주어진 캐릭터(HitCharacter)가 특정 위치(HitLocation)에서 발사된 투사체에 맞았는지를 확인합니다. 라그 컴펜세이션을 적용한 후, 실제로 캐릭터가 맞았다면 해당 캐릭터에 데미지를 적용합니다.
+
+ShotgunServerScoreRequest_Implementation(const TArray<ABlasterCharacter>& HitCharacters, const FVector_NetQuantize& TraceStart, const TArray<FVector_NetQuantize>& HitLocations, float HitTime)**: 이 메서드는 샷건의 서버 점수 요청을 처리합니다. 이 메서드는 서버가 과거의 특정 시점(HitTime)으로 돌아가서 주어진 캐릭터들(HitCharacters)이 특정 위치들(HitLocations)에서 발사된 샷건 탄에 맞았는지를 확인합니다. 라그 컴펜세이션을 적용한 후, 실제로 캐릭터가 맞았다면 해당 캐릭터에 데미지를 적용합니다.
+
+TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction ThisTickFunction)**: 이 메서드는 각 틱마다 컴포넌트의 상태를 업데이트합니다. 이 경우에는 각 틱마다 새로운 프레임 패키지를 저장합니다.
+
+SaveFramePackage(): 이 메서드는 캐릭터의 현재 상태를 표현하는 프레임 패키지를 저장합니다. 이 메서드는 프레임 히스토리가 너무 오래되지 않도록 관리하며, 최신 상태를 항상 히스토리의 헤드에 추가합니다.
+
+SaveFramePackage(FFramePackage& Package): 이 메서드는 주어진 패키지(Package)에 캐릭터의 현재 상태를 저장합니다. 이 메서드는 캐릭터의 현재 위치, 회전, 박스 충돌 정보 등을 패키지에 저장합니다.
