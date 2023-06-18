@@ -1,5 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// BlasterAnimInstance.cpp
 
 #include "BlasterAnimInstance.h"
 #include "BlasterCharacter.h"
@@ -25,6 +24,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	}
 	if (BlasterCharacter == nullptr) return;
 
+	// 계산에 필요한 변수들을 설정합니다.
 	FVector Velocity = BlasterCharacter->GetVelocity();
 	Velocity.Z = 0.f;
 	Speed = Velocity.Size();
@@ -40,7 +40,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	bElimmed = BlasterCharacter->IsElimmed();
 	bHoldingTheFlag = BlasterCharacter->IsHoldingTheFlag();
 
-	// Offset Yaw for Strafing
+	// 좌우 이동에 따른 Yaw 오프셋을 계산합니다.
 	FRotator AimRotation = BlasterCharacter->GetBaseAimRotation();
 	FRotator MovementRotation = UKismetMathLibrary::MakeRotFromX(BlasterCharacter->GetVelocity());
 	FRotator DeltaRot = UKismetMathLibrary::NormalizedDeltaRotator(MovementRotation, AimRotation);
@@ -57,6 +57,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	AO_Yaw = BlasterCharacter->GetAO_Yaw();
 	AO_Pitch = BlasterCharacter->GetAO_Pitch();
 
+	// 무기가 장착되어 있고, 무기 메시와 캐릭터 메시가 존재하는 경우, 왼손의 위치와 회전을 계산합니다.
 	if (bWeaponEquipped && EquippedWeapon && EquippedWeapon->GetWeaponMesh() && BlasterCharacter->GetMesh())
 	{
 		LeftHandTransform = EquippedWeapon->GetWeaponMesh()->GetSocketTransform(FName("LeftHandSocket"), ERelativeTransformSpace::RTS_World);
@@ -66,6 +67,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		LeftHandTransform.SetLocation(OutPosition);
 		LeftHandTransform.SetRotation(FQuat(OutRotation));
 
+		// 로컬 플레이어가 조종 중이라면, 오른손의 회전을 계산합니다.
 		if (BlasterCharacter->IsLocallyControlled())
 		{
 			bLocallyControlled = true;
@@ -75,6 +77,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 		}
 	}
 
+	// FABRIK 사용 여부를 결정합니다.
 	bUseFABRIK = BlasterCharacter->GetCombatState() == ECombatState::ECS_Unoccupied;
 	bool bFABRIKOverride = BlasterCharacter->IsLocallyControlled() &&
 		BlasterCharacter->GetCombatState() != ECombatState::ECS_ThrowingGrenade &&
@@ -83,6 +86,7 @@ void UBlasterAnimInstance::NativeUpdateAnimation(float DeltaTime)
 	{
 		bUseFABRIK = !BlasterCharacter->IsLocallyReloading();
 	}
+
 	bUseAimOffsets = BlasterCharacter->GetCombatState() == ECombatState::ECS_Unoccupied && !BlasterCharacter->GetDisableGameplay();
 	bTransformRightHand = BlasterCharacter->GetCombatState() == ECombatState::ECS_Unoccupied && !BlasterCharacter->GetDisableGameplay();
 }

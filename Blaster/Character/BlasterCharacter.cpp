@@ -31,31 +31,40 @@
 
 ABlasterCharacter::ABlasterCharacter()
 {
+	// 틱이 작동하도록 설정
 	PrimaryActorTick.bCanEverTick = true;
 
+	// 카메라 붐을 생성하고 설정
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(GetMesh());
 	CameraBoom->TargetArmLength = 600.f;
 	CameraBoom->bUsePawnControlRotation = true;
 
+	// 추적 카메라를 생성하고 설정
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
+	// 컨트롤러의 회전 설정을 사용하지 않도록 설정
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
 
+	// 오버헤드 위젯 생성
 	OverheadWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("OverheadWidget"));
 	OverheadWidget->SetupAttachment(RootComponent);
 
+	// 컴뱃 컴포넌트를 생성하고 네트워크 복제 설정
 	Combat = CreateDefaultSubobject<UCombatComponent>(TEXT("Combat"));
 	Combat->SetIsReplicated(true);
 
+	// 버프 컴포넌트를 생성하고 네트워크 복제 설정
 	Buff = CreateDefaultSubobject<UBuffComponent>(TEXT("BuffComponent"));
 	Buff->SetIsReplicated(true);
 
+	// 렉 보상 컴포넌트 생성
 	LagCompensation = CreateDefaultSubobject<ULagCompensationComponent>(TEXT("LagCompensation"));
 
+	// 캐릭터 움직임과 충돌 설정
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 	GetCapsuleComponent()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Camera, ECollisionResponse::ECR_Ignore);
 	GetMesh()->SetCollisionObjectType(ECC_SkeletalMesh);
@@ -63,19 +72,20 @@ ABlasterCharacter::ABlasterCharacter()
 	GetMesh()->SetCollisionResponseToChannel(ECollisionChannel::ECC_Visibility, ECollisionResponse::ECR_Block);
 	GetCharacterMovement()->RotationRate = FRotator(0.f, 0.f, 850.f);
 
+	// 기본 회전 상태 설정 및 네트워크 업데이트 빈도 설정
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 	NetUpdateFrequency = 66.f;
 	MinNetUpdateFrequency = 33.f;
 
+	// 해체 시간라인 컴포넌트 생성
 	DissolveTimeline = CreateDefaultSubobject<UTimelineComponent>(TEXT("DissolveTimelineComponent"));
 
+	// 첨부된 그레네이드를 생성하고 설정
 	AttachedGrenade = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Attached Grenade"));
 	AttachedGrenade->SetupAttachment(GetMesh(), FName("GrenadeSocket"));
 	AttachedGrenade->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
-	/**
-	* Hit boxes for server-side rewind
-	*/
+	// 서버 측 리와인드를 위한 히트 박스 생성
 
 	head = CreateDefaultSubobject<UBoxComponent>(TEXT("head"));
 	head->SetupAttachment(GetMesh(), FName("head"));
@@ -149,6 +159,7 @@ ABlasterCharacter::ABlasterCharacter()
 	foot_r->SetupAttachment(GetMesh(), FName("foot_r"));
 	HitCollisionBoxes.Add(FName("foot_r"), foot_r);
 
+	// 모든 히트 박스에 대해 충돌 유형 및 응답 설정
 	for (auto Box : HitCollisionBoxes)
 	{
 		if (Box.Value)
@@ -161,6 +172,7 @@ ABlasterCharacter::ABlasterCharacter()
 	}
 }
 
+// 수명 동안 복제되는 속성 설정
 void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -171,6 +183,7 @@ void ABlasterCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(ABlasterCharacter, bDisableGameplay);
 }
 
+// 리플리케이션 이후의 이동을 처리
 void ABlasterCharacter::OnRep_ReplicatedMovement()
 {
 	Super::OnRep_ReplicatedMovement();
@@ -178,12 +191,14 @@ void ABlasterCharacter::OnRep_ReplicatedMovement()
 	TimeSinceLastMovementReplication = 0.f;
 }
 
+// 캐릭터를 제거
 void ABlasterCharacter::Elim(bool bPlayerLeftGame)
 {
 	DropOrDestroyWeapons();
 	MulticastElim(bPlayerLeftGame);
 }
 
+// 다중 환경에서 캐릭터 제거 구현
 void ABlasterCharacter::MulticastElim_Implementation(bool bPlayerLeftGame)
 {
 	bLeftGame = bPlayerLeftGame;
@@ -257,52 +272,69 @@ void ABlasterCharacter::MulticastElim_Implementation(bool bPlayerLeftGame)
 
 void ABlasterCharacter::ElimTimerFinished()
 {
+	// 블래스터 게임 모드를 설정하거나 기존 블래스터 게임 모드를 찾습니다.
 	BlasterGameMode = BlasterGameMode == nullptr ? GetWorld()->GetAuthGameMode<ABlasterGameMode>() : BlasterGameMode;
+	// 게임 모드가 존재하고, 플레이어가 게임을 떠나지 않은 경우
 	if (BlasterGameMode && !bLeftGame)
 	{
+		// 리스폰을 요청합니다.
 		BlasterGameMode->RequestRespawn(this, Controller);
 	}
+	// 플레이어가 게임을 떠난 경우 및 로컬로 제어되는 경우
 	if (bLeftGame && IsLocallyControlled())
 	{
+		// 게임을 떠났음을 방송합니다.
 		OnLeftGame.Broadcast();
 	}
 }
 
 void ABlasterCharacter::ServerLeaveGame_Implementation()
 {
+	// 블래스터 게임 모드를 설정하거나 기존 블래스터 게임 모드를 찾습니다.
 	BlasterGameMode = BlasterGameMode == nullptr ? GetWorld()->GetAuthGameMode<ABlasterGameMode>() : BlasterGameMode;
+	// 블래스터 플레이어 상태를 설정하거나 기존 블래스터 플레이어 상태를 찾습니다.
 	BlasterPlayerState = BlasterPlayerState == nullptr ? GetPlayerState<ABlasterPlayerState>() : BlasterPlayerState;
+	// 게임 모드와 플레이어 상태가 존재하는 경우
 	if (BlasterGameMode && BlasterPlayerState)
 	{
+		// 플레이어가 게임을 떠난 것을 알립니다.
 		BlasterGameMode->PlayerLeftGame(BlasterPlayerState);
 	}
 }
 
 void ABlasterCharacter::DropOrDestroyWeapon(AWeapon* Weapon)
 {
+	// 무기가 없는 경우 반환
 	if (Weapon == nullptr) return;
+	// 무기를 파괴해야 하는 경우
 	if (Weapon->bDestroyWeapon)
 	{
+		// 무기를 파괴
 		Weapon->Destroy();
 	}
 	else
 	{
+		// 무기를 떨어뜨림
 		Weapon->Dropped();
 	}
 }
 
 void ABlasterCharacter::DropOrDestroyWeapons()
 {
+	// 전투가 있는 경우
 	if (Combat)
 	{
+		// 장착된 무기를 떨어뜨리거나 파괴
 		if (Combat->EquippedWeapon)
 		{
 			DropOrDestroyWeapon(Combat->EquippedWeapon);
 		}
+		// 보조 무기를 떨어뜨리거나 파괴
 		if (Combat->SecondaryWeapon)
 		{
 			DropOrDestroyWeapon(Combat->SecondaryWeapon);
 		}
+		// 깃발이 있는 경우 깃발을 떨어뜨림
 		if (Combat->TheFlag)
 		{
 			Combat->TheFlag->Dropped();
@@ -312,19 +344,25 @@ void ABlasterCharacter::DropOrDestroyWeapons()
 
 void ABlasterCharacter::OnPlayerStateInitialized()
 {
+	// 점수와 패배 횟수를 초기화
 	BlasterPlayerState->AddToScore(0.f);
 	BlasterPlayerState->AddToDefeats(0);
+	// 팀 색상을 설정
 	SetTeamColor(BlasterPlayerState->GetTeam());
+	// 스폰 위치를 설정
 	SetSpawnPoint();
 }
 
 void ABlasterCharacter::SetSpawnPoint()
 {
+	// 권한이 있고, 팀이 설정되어 있는 경우
 	if (HasAuthority() && BlasterPlayerState->GetTeam() != ETeam::ET_NoTeam)
 	{
+		// 모든 플레이어 시작점을 가져옴
 		TArray<AActor*> PlayerStarts;
 		UGameplayStatics::GetAllActorsOfClass(this, ATeamPlayerStart::StaticClass(), PlayerStarts);
 		TArray<ATeamPlayerStart*> TeamPlayerStarts;
+		// 플레이어 시작점에서 같은 팀의 시작점을 찾음
 		for (auto Start : PlayerStarts)
 		{
 			ATeamPlayerStart* TeamStart = Cast<ATeamPlayerStart>(Start);
@@ -333,9 +371,12 @@ void ABlasterCharacter::SetSpawnPoint()
 				TeamPlayerStarts.Add(TeamStart);
 			}
 		}
+		// 팀 시작점이 하나 이상 있는 경우
 		if (TeamPlayerStarts.Num() > 0)
 		{
+			// 무작위로 팀 시작점을 선택
 			ATeamPlayerStart* ChosenPlayerStart = TeamPlayerStarts[FMath::RandRange(0, TeamPlayerStarts.Num() - 1)];
+			// 선택된 시작점의 위치와 회전으로 액터의 위치와 회전을 설정
 			SetActorLocationAndRotation(
 				ChosenPlayerStart->GetActorLocation(),
 				ChosenPlayerStart->GetActorRotation()
@@ -348,24 +389,34 @@ void ABlasterCharacter::Destroyed()
 {
 	Super::Destroyed();
 
+	// ElimBotComponent가 있는 경우 파괴
 	if (ElimBotComponent)
 	{
 		ElimBotComponent->DestroyComponent();
 	}
 
+	// 블래스터 게임 모드를 설정하거나 기존 블래스터 게임 모드를 찾습니다.
 	BlasterGameMode = BlasterGameMode == nullptr ? GetWorld()->GetAuthGameMode<ABlasterGameMode>() : BlasterGameMode;
+	// 경기가 진행중이 아닌지 확인
 	bool bMatchNotInProgress = BlasterGameMode && BlasterGameMode->GetMatchState() != MatchState::InProgress;
+	// 전투가 있고, 무기가 장착되어 있으며, 경기가 진행중이 아닌 경우
 	if (Combat && Combat->EquippedWeapon && bMatchNotInProgress)
 	{
+		// 무기를 파괴
 		Combat->EquippedWeapon->Destroy();
 	}
 }
 
+
+// 멀티캐스트로 리드 상태 획득을 구현한 메서드
 void ABlasterCharacter::MulticastGainedTheLead_Implementation()
 {
+	// CrownSystem이 없는 경우 리턴
 	if (CrownSystem == nullptr) return;
+	// CrownComponent가 없는 경우
 	if (CrownComponent == nullptr)
 	{
+		// CrownComponent를 생성
 		CrownComponent = UNiagaraFunctionLibrary::SpawnSystemAttached(
 			CrownSystem,
 			GetMesh(),
@@ -376,65 +427,84 @@ void ABlasterCharacter::MulticastGainedTheLead_Implementation()
 			false
 		);
 	}
+	// CrownComponent가 있는 경우
 	if (CrownComponent)
 	{
+		// CrownComponent를 활성화
 		CrownComponent->Activate();
 	}
 }
 
+// 멀티캐스트로 리드 상태 상실을 구현한 메서드
 void ABlasterCharacter::MulticastLostTheLead_Implementation()
 {
+	// CrownComponent가 있는 경우
 	if (CrownComponent)
 	{
+		// CrownComponent를 파괴
 		CrownComponent->DestroyComponent();
 	}
 }
 
+// 팀 색상을 설정하는 메서드
 void ABlasterCharacter::SetTeamColor(ETeam Team)
 {
+	// 메시 또는 원래의 재질이 없는 경우 리턴
 	if (GetMesh() == nullptr || OriginalMaterial == nullptr) return;
 	switch (Team)
 	{
-	case ETeam::ET_NoTeam:
+	case ETeam::ET_NoTeam:  // 팀이 없는 경우
 		GetMesh()->SetMaterial(0, OriginalMaterial);
 		DissolveMaterialInstance = BlueDissolveMatInst;
 		break;
-	case ETeam::ET_BlueTeam:
+	case ETeam::ET_BlueTeam:  // 팀이 Blue인 경우
 		GetMesh()->SetMaterial(0, BlueMaterial);
 		DissolveMaterialInstance = BlueDissolveMatInst;
 		break;
-	case ETeam::ET_RedTeam:
+	case ETeam::ET_RedTeam:  // 팀이 Red인 경우
 		GetMesh()->SetMaterial(0, RedMaterial);
 		DissolveMaterialInstance = RedDissolveMatInst;
 		break;
 	}
 }
 
+// 플레이 시작 시 호출되는 메서드
 void ABlasterCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 권한이 있는 경우
 	if (HasAuthority())
 	{
+		// 데미지를 받을 때 호출될 메서드를 등록
 		OnTakeAnyDamage.AddDynamic(this, &ABlasterCharacter::ReceiveDamage);
 	}
+	// Grenade가 첨부된 경우
 	if (AttachedGrenade)
 	{
+		// Grenade의 가시성을 false로 설정
 		AttachedGrenade->SetVisibility(false);
 	}
 }
 
+// 매 프레임마다 호출되는 메서드
 void ABlasterCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	// 자리에서 회전
 	RotateInPlace(DeltaTime);
+	// 캐릭터가 가까운 경우 카메라 숨김
 	HideCameraIfCharacterClose();
+	// 초기화 조사
 	PollInit();
 }
 
+
+// 자리에서 회전하는 메서드
 void ABlasterCharacter::RotateInPlace(float DeltaTime)
 {
+	// 플래그를 들고 있을 경우
 	if (Combat && Combat->bHoldingTheFlag)
 	{
 		bUseControllerRotationYaw = false;
@@ -442,8 +512,10 @@ void ABlasterCharacter::RotateInPlace(float DeltaTime)
 		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
 		return;
 	}
+	// 무기를 장착한 경우
 	if (Combat && Combat->EquippedWeapon) GetCharacterMovement()->bOrientRotationToMovement = false;
 	if (Combat && Combat->EquippedWeapon) bUseControllerRotationYaw = true;
+	// 게임 플레이가 비활성화된 경우
 	if (bDisableGameplay)
 	{
 		bUseControllerRotationYaw = false;
@@ -456,6 +528,7 @@ void ABlasterCharacter::RotateInPlace(float DeltaTime)
 	}
 	else
 	{
+		// 이동 복제에 따른 시간 경과
 		TimeSinceLastMovementReplication += DeltaTime;
 		if (TimeSinceLastMovementReplication > 0.25f)
 		{
@@ -465,6 +538,7 @@ void ABlasterCharacter::RotateInPlace(float DeltaTime)
 	}
 }
 
+// 플레이어 입력 컴포넌트 설정 메서드
 void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
@@ -486,6 +560,7 @@ void ABlasterCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCo
 	PlayerInputComponent->BindAction("ThrowGrenade", IE_Pressed, this, &ABlasterCharacter::GrenadeButtonPressed);
 }
 
+// 컴포넌트 초기화 후 메서드
 void ABlasterCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
@@ -496,10 +571,12 @@ void ABlasterCharacter::PostInitializeComponents()
 	if (Buff)
 	{
 		Buff->Character = this;
+		// 초기 속도 설정
 		Buff->SetInitialSpeeds(
 			GetCharacterMovement()->MaxWalkSpeed,
 			GetCharacterMovement()->MaxWalkSpeedCrouched
 		);
+		// 초기 점프 속도 설정
 		Buff->SetInitialJumpVelocity(GetCharacterMovement()->JumpZVelocity);
 	}
 	if (LagCompensation)
@@ -512,8 +589,10 @@ void ABlasterCharacter::PostInitializeComponents()
 	}
 }
 
+// 발사 모션 재생 메서드
 void ABlasterCharacter::PlayFireMontage(bool bAiming)
 {
+	// Combat이 없거나 무기가 없는 경우 리턴
 	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -526,8 +605,11 @@ void ABlasterCharacter::PlayFireMontage(bool bAiming)
 	}
 }
 
+
+// 재장전 모션 재생 메서드
 void ABlasterCharacter::PlayReloadMontage()
 {
+	// Combat이 없거나 무기가 없는 경우 함수 종료
 	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
 
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -536,6 +618,7 @@ void ABlasterCharacter::PlayReloadMontage()
 		AnimInstance->Montage_Play(ReloadMontage);
 		FName SectionName;
 
+		// 장착된 무기의 종류에 따라 섹션 이름 변경
 		switch (Combat->EquippedWeapon->GetWeaponType())
 		{
 		case EWeaponType::EWT_AssaultRifle:
@@ -561,10 +644,12 @@ void ABlasterCharacter::PlayReloadMontage()
 			break;
 		}
 
+		// 특정 섹션으로 이동
 		AnimInstance->Montage_JumpToSection(SectionName);
 	}
 }
 
+// 처치 모션 재생 메서드
 void ABlasterCharacter::PlayElimMontage()
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -574,6 +659,7 @@ void ABlasterCharacter::PlayElimMontage()
 	}
 }
 
+// 수류탄 투척 모션 재생 메서드
 void ABlasterCharacter::PlayThrowGrenadeMontage()
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -583,6 +669,7 @@ void ABlasterCharacter::PlayThrowGrenadeMontage()
 	}
 }
 
+// 교체 모션 재생 메서드
 void ABlasterCharacter::PlaySwapMontage()
 {
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
@@ -592,6 +679,7 @@ void ABlasterCharacter::PlaySwapMontage()
 	}
 }
 
+// 피격 반응 모션 재생 메서드
 void ABlasterCharacter::PlayHitReactMontage()
 {
 	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
@@ -605,22 +693,31 @@ void ABlasterCharacter::PlayHitReactMontage()
 	}
 }
 
+// 수류탄 버튼이 눌릴 때의 처리 메서드
 void ABlasterCharacter::GrenadeButtonPressed()
 {
 	if (Combat)
 	{
+		// 플래그를 들고 있는 경우 수류탄을 던지지 않음
 		if (Combat->bHoldingTheFlag) return;
 		Combat->ThrowGrenade();
 	}
 }
 
+
+// 메서드: ReceiveDamage
+// 역할: 데미지를 받았을 때 호출되는 함수입니다.
 void ABlasterCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const UDamageType* DamageType, AController* InstigatorController, AActor* DamageCauser)
 {
 	BlasterGameMode = BlasterGameMode == nullptr ? GetWorld()->GetAuthGameMode<ABlasterGameMode>() : BlasterGameMode;
 	if (bElimmed || BlasterGameMode == nullptr) return;
+
+	// 데미지 계산
 	Damage = BlasterGameMode->CalculateDamage(InstigatorController, Controller, Damage);
 
 	float DamageToHealth = Damage;
+
+	// 실드가 있을 경우 실드로 데미지를 막음
 	if (Shield > 0.f)
 	{
 		if (Shield >= Damage)
@@ -635,62 +732,92 @@ void ABlasterCharacter::ReceiveDamage(AActor* DamagedActor, float Damage, const 
 		}
 	}
 
+	// 체력 업데이트
 	Health = FMath::Clamp(Health - DamageToHealth, 0.f, MaxHealth);
 
+	// HUD 업데이트
 	UpdateHUDHealth();
 	UpdateHUDShield();
+
+	// 피격 반응 Montage 재생
 	PlayHitReactMontage();
 
+	// 체력이 0이면 플레이어 제거
 	if (Health == 0.f)
 	{
 		if (BlasterGameMode)
 		{
+			// 플레이어 컨트롤러와 공격자 컨트롤러를 가져옴
 			BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
 			ABlasterPlayerController* AttackerController = Cast<ABlasterPlayerController>(InstigatorController);
+
+			// 게임 모드에 플레이어 제거를 알림
 			BlasterGameMode->PlayerEliminated(this, BlasterPlayerController, AttackerController);
 		}
 	}
 }
 
+// 메서드: MoveForward
+// 역할: 앞으로 이동하는 함수입니다.
 void ABlasterCharacter::MoveForward(float Value)
 {
 	if (bDisableGameplay) return;
+
 	if (Controller != nullptr && Value != 0.f)
 	{
 		const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
 		const FVector Direction(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X));
+
+		// 이동 입력을 적용
 		AddMovementInput(Direction, Value);
 	}
 }
 
+// 메서드: MoveRight
+// 역할: 오른쪽으로 이동하는 함수입니다.
 void ABlasterCharacter::MoveRight(float Value)
 {
 	if (bDisableGameplay) return;
+
 	if (Controller != nullptr && Value != 0.f)
 	{
 		const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
 		const FVector Direction(FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y));
+
+		// 이동 입력을 적용
 		AddMovementInput(Direction, Value);
 	}
 }
 
+// 메서드: Turn
+// 역할: 캐릭터의 좌우 회전을 처리하는 함수입니다.
 void ABlasterCharacter::Turn(float Value)
 {
 	AddControllerYawInput(Value);
 }
 
+// 메서드: LookUp
+// 역할: 캐릭터의 상하 시선을 처리하는 함수입니다.
 void ABlasterCharacter::LookUp(float Value)
 {
 	AddControllerPitchInput(Value);
 }
 
+// 메서드: EquipButtonPressed
+// 역할: 장비 버튼을 눌렀을 때 호출되는 함수입니다.
 void ABlasterCharacter::EquipButtonPressed()
 {
 	if (bDisableGameplay) return;
+
 	if (Combat)
 	{
+		// 깃발을 들고 있는 경우 무시
 		if (Combat->bHoldingTheFlag) return;
+
+		// 전투 상태가 미점령 상태인 경우에만 실행
 		if (Combat->CombatState == ECombatState::ECS_Unoccupied) ServerEquipButtonPressed();
+
+		// 무기를 교체해야 하는지 확인하고, 서버에서 실행
 		bool bSwap = Combat->ShouldSwapWeapons() &&
 			!HasAuthority() &&
 			Combat->CombatState == ECombatState::ECS_Unoccupied &&
@@ -698,86 +825,115 @@ void ABlasterCharacter::EquipButtonPressed()
 
 		if (bSwap)
 		{
+			// 교체 Montage 재생
 			PlaySwapMontage();
+
+			// 전투 상태 변경 및 교체 완료 여부 초기화
 			Combat->CombatState = ECombatState::ECS_SwappingWeapons;
 			bFinishedSwapping = false;
 		}
 	}
 }
 
+
+// 메서드: ServerEquipButtonPressed_Implementation
+// 역할: 서버에서 실행되는 장비 버튼 눌림 함수입니다.
 void ABlasterCharacter::ServerEquipButtonPressed_Implementation()
 {
 	if (Combat)
 	{
 		if (OverlappingWeapon)
 		{
+			// 겹치는 무기가 있을 경우 무기를 장착합니다.
 			Combat->EquipWeapon(OverlappingWeapon);
 		}
 		else if (Combat->ShouldSwapWeapons())
 		{
+			// 무기를 교체해야 하는 경우 무기를 교체합니다.
 			Combat->SwapWeapons();
 		}
 	}
 }
 
+// 메서드: CrouchButtonPressed
+// 역할: 앉기 버튼을 눌렀을 때 호출되는 함수입니다.
 void ABlasterCharacter::CrouchButtonPressed()
 {
 	if (Combat && Combat->bHoldingTheFlag) return;
 	if (bDisableGameplay) return;
 	if (bIsCrouched)
 	{
+		// 이미 앉아 있는 경우 서서히 일어나게 합니다.
 		UnCrouch();
 	}
 	else
 	{
+		// 서있는 경우 서서히 앉게 합니다.
 		Crouch();
 	}
 }
 
+// 메서드: ReloadButtonPressed
+// 역할: 재장전 버튼을 눌렀을 때 호출되는 함수입니다.
 void ABlasterCharacter::ReloadButtonPressed()
 {
 	if (Combat && Combat->bHoldingTheFlag) return;
 	if (bDisableGameplay) return;
 	if (Combat)
 	{
+		// 전투 객체의 재장전 함수를 호출합니다.
 		Combat->Reload();
 	}
 }
 
+// 메서드: AimButtonPressed
+// 역할: 조준 버튼을 눌렀을 때 호출되는 함수입니다.
 void ABlasterCharacter::AimButtonPressed()
 {
 	if (Combat && Combat->bHoldingTheFlag) return;
 	if (bDisableGameplay) return;
 	if (Combat)
 	{
+		// 전투 객체의 조준 설정을 활성화합니다.
 		Combat->SetAiming(true);
 	}
 }
 
+// 메서드: AimButtonReleased
+// 역할: 조준 버튼을 눌렀다 뗐을 때 호출되는 함수입니다.
 void ABlasterCharacter::AimButtonReleased()
 {
 	if (Combat && Combat->bHoldingTheFlag) return;
 	if (bDisableGameplay) return;
 	if (Combat)
 	{
+		// 전투 객체의 조준 설정을 비활성화합니다.
 		Combat->SetAiming(false);
 	}
 }
 
+// 메서드: CalculateSpeed
+// 역할: 이동 속도를 계산하는 함수입니다.
 float ABlasterCharacter::CalculateSpeed()
 {
 	FVector Velocity = GetVelocity();
 	Velocity.Z = 0.f;
+
+	// 이동 속도 계산
 	return Velocity.Size();
 }
 
+
+// 메서드: AimOffset
+// 역할: 조준 오프셋을 처리하는 함수입니다.
 void ABlasterCharacter::AimOffset(float DeltaTime)
 {
 	if (Combat && Combat->EquippedWeapon == nullptr) return;
 	float Speed = CalculateSpeed();
 	bool bIsInAir = GetCharacterMovement()->IsFalling();
 
-	if (Speed == 0.f && !bIsInAir) // standing still, not jumping
+	// 멈춰있고 점프 중이 아닌 경우
+	if (Speed == 0.f && !bIsInAir)
 	{
 		bRotateRootBone = true;
 		FRotator CurrentAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
@@ -790,7 +946,9 @@ void ABlasterCharacter::AimOffset(float DeltaTime)
 		bUseControllerRotationYaw = true;
 		TurnInPlace(DeltaTime);
 	}
-	if (Speed > 0.f || bIsInAir) // running, or jumping
+
+	// 달리거나 공중에 있는 경우
+	if (Speed > 0.f || bIsInAir)
 	{
 		bRotateRootBone = false;
 		StartingAimRotation = FRotator(0.f, GetBaseAimRotation().Yaw, 0.f);
@@ -802,23 +960,31 @@ void ABlasterCharacter::AimOffset(float DeltaTime)
 	CalculateAO_Pitch();
 }
 
+// 메서드: CalculateAO_Pitch
+// 역할: AO_Pitch 값을 계산하는 함수입니다.
 void ABlasterCharacter::CalculateAO_Pitch()
 {
 	AO_Pitch = GetBaseAimRotation().Pitch;
+
+	// AO_Pitch가 90보다 크고 로컬 컨트롤이 아닌 경우
 	if (AO_Pitch > 90.f && !IsLocallyControlled())
 	{
-		// map pitch from [270, 360) to [-90, 0)
+		// pitch를 [270, 360) 범위에서 [-90, 0) 범위로 매핑합니다.
 		FVector2D InRange(270.f, 360.f);
 		FVector2D OutRange(-90.f, 0.f);
 		AO_Pitch = FMath::GetMappedRangeValueClamped(InRange, OutRange, AO_Pitch);
 	}
 }
 
+// 메서드: SimProxiesTurn
+// 역할: 프록시 회전을 처리하는 함수입니다.
 void ABlasterCharacter::SimProxiesTurn()
 {
 	if (Combat == nullptr || Combat->EquippedWeapon == nullptr) return;
 	bRotateRootBone = false;
 	float Speed = CalculateSpeed();
+
+	// 이동 속도가 0보다 큰 경우
 	if (Speed > 0.f)
 	{
 		TurningInPlace = ETurningInPlace::ETIP_NotTurning;
@@ -831,6 +997,7 @@ void ABlasterCharacter::SimProxiesTurn()
 
 	if (FMath::Abs(ProxyYaw) > TurnThreshold)
 	{
+		// 프록시 Yaw 각도가 임계값보다 큰 경우
 		if (ProxyYaw > TurnThreshold)
 		{
 			TurningInPlace = ETurningInPlace::ETIP_Right;
@@ -846,43 +1013,55 @@ void ABlasterCharacter::SimProxiesTurn()
 		return;
 	}
 	TurningInPlace = ETurningInPlace::ETIP_NotTurning;
-
 }
 
+
+// 메서드: Jump
+// 역할: 점프 기능을 처리하는 함수입니다.
 void ABlasterCharacter::Jump()
 {
 	if (Combat && Combat->bHoldingTheFlag) return;
 	if (bDisableGameplay) return;
 	if (bIsCrouched)
 	{
+		// 앉아 있는 상태에서 점프하면 일어나게 합니다.
 		UnCrouch();
 	}
 	else
 	{
+		// 일반적인 점프 동작을 실행합니다.
 		Super::Jump();
 	}
 }
 
+// 메서드: FireButtonPressed
+// 역할: 발사 버튼을 눌렀을 때 호출되는 함수입니다.
 void ABlasterCharacter::FireButtonPressed()
 {
 	if (Combat && Combat->bHoldingTheFlag) return;
 	if (bDisableGameplay) return;
 	if (Combat)
 	{
+		// 전투 객체의 발사 버튼을 눌렀음을 전달합니다.
 		Combat->FireButtonPressed(true);
 	}
 }
 
+// 메서드: FireButtonReleased
+// 역할: 발사 버튼을 눌렀다 뗐을 때 호출되는 함수입니다.
 void ABlasterCharacter::FireButtonReleased()
 {
 	if (Combat && Combat->bHoldingTheFlag) return;
 	if (bDisableGameplay) return;
 	if (Combat)
 	{
+		// 전투 객체의 발사 버튼을 떼었음을 전달합니다.
 		Combat->FireButtonPressed(false);
 	}
 }
 
+// 메서드: TurnInPlace
+// 역할: 제자리에서 회전하는 동작을 처리하는 함수입니다.
 void ABlasterCharacter::TurnInPlace(float DeltaTime)
 {
 	if (AO_Yaw > 90.f)
@@ -905,11 +1084,14 @@ void ABlasterCharacter::TurnInPlace(float DeltaTime)
 	}
 }
 
+// 메서드: HideCameraIfCharacterClose
+// 역할: 캐릭터와 카메라의 거리에 따라 카메라와 무기의 가시성을 조절하는 함수입니다.
 void ABlasterCharacter::HideCameraIfCharacterClose()
 {
 	if (!IsLocallyControlled()) return;
 	if ((FollowCamera->GetComponentLocation() - GetActorLocation()).Size() < CameraThreshold)
 	{
+		// 캐릭터와 카메라의 거리가 임계값보다 작은 경우
 		GetMesh()->SetVisibility(false);
 		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
 		{
@@ -922,6 +1104,7 @@ void ABlasterCharacter::HideCameraIfCharacterClose()
 	}
 	else
 	{
+		// 캐릭터와 카메라의 거리가 임계값보다 큰 경우
 		GetMesh()->SetVisibility(true);
 		if (Combat && Combat->EquippedWeapon && Combat->EquippedWeapon->GetWeaponMesh())
 		{
@@ -934,24 +1117,34 @@ void ABlasterCharacter::HideCameraIfCharacterClose()
 	}
 }
 
+
+
+// 메서드: OnRep_Health
+// 역할: Health 값이 Replicate되었을 때 호출되는 함수입니다.
 void ABlasterCharacter::OnRep_Health(float LastHealth)
 {
 	UpdateHUDHealth();
 	if (Health < LastHealth)
 	{
+		// Health가 감소한 경우 피격 반응 Montage를 재생합니다.
 		PlayHitReactMontage();
 	}
 }
 
+// 메서드: OnRep_Shield
+// 역할: Shield 값이 Replicate되었을 때 호출되는 함수입니다.
 void ABlasterCharacter::OnRep_Shield(float LastShield)
 {
 	UpdateHUDShield();
 	if (Shield < LastShield)
 	{
+		// Shield가 감소한 경우 피격 반응 Montage를 재생합니다.
 		PlayHitReactMontage();
 	}
 }
 
+// 메서드: UpdateHUDHealth
+// 역할: HUD의 Health 정보를 업데이트하는 함수입니다.
 void ABlasterCharacter::UpdateHUDHealth()
 {
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
@@ -961,6 +1154,8 @@ void ABlasterCharacter::UpdateHUDHealth()
 	}
 }
 
+// 메서드: UpdateHUDShield
+// 역할: HUD의 Shield 정보를 업데이트하는 함수입니다.
 void ABlasterCharacter::UpdateHUDShield()
 {
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
@@ -970,6 +1165,8 @@ void ABlasterCharacter::UpdateHUDShield()
 	}
 }
 
+// 메서드: UpdateHUDAmmo
+// 역할: HUD의 탄약 정보를 업데이트하는 함수입니다.
 void ABlasterCharacter::UpdateHUDAmmo()
 {
 	BlasterPlayerController = BlasterPlayerController == nullptr ? Cast<ABlasterPlayerController>(Controller) : BlasterPlayerController;
@@ -980,12 +1177,15 @@ void ABlasterCharacter::UpdateHUDAmmo()
 	}
 }
 
-void ABlasterCharacter::SpawDefaultWeapon()
+// 메서드: SpawnDefaultWeapon
+// 역할: 기본 무기를 스폰하는 함수입니다.
+void ABlasterCharacter::SpawnDefaultWeapon()
 {
 	BlasterGameMode = BlasterGameMode == nullptr ? GetWorld()->GetAuthGameMode<ABlasterGameMode>() : BlasterGameMode;
 	UWorld* World = GetWorld();
 	if (BlasterGameMode && World && !bElimmed && DefaultWeaponClass)
 	{
+		// 기본 무기를 스폰하여 Equip합니다.
 		AWeapon* StartingWeapon = World->SpawnActor<AWeapon>(DefaultWeaponClass);
 		StartingWeapon->bDestroyWeapon = true;
 		if (Combat)
@@ -995,10 +1195,15 @@ void ABlasterCharacter::SpawDefaultWeapon()
 	}
 }
 
+
+
+// 메서드: PollInit
+// 역할: 초기화 작업을 수행하는 함수입니다.
 void ABlasterCharacter::PollInit()
 {
 	if (BlasterPlayerState == nullptr)
 	{
+		// BlasterPlayerState가 nullptr인 경우 PlayerState를 가져와서 초기화합니다.
 		BlasterPlayerState = GetPlayerState<ABlasterPlayerState>();
 		if (BlasterPlayerState)
 		{
@@ -1025,6 +1230,8 @@ void ABlasterCharacter::PollInit()
 	}
 }
 
+// 메서드: UpdateDissolveMaterial
+// 역할: Dissolve 재질을 업데이트하는 함수입니다.
 void ABlasterCharacter::UpdateDissolveMaterial(float DissolveValue)
 {
 	if (DynamicDissolveMaterialInstance)
@@ -1033,6 +1240,8 @@ void ABlasterCharacter::UpdateDissolveMaterial(float DissolveValue)
 	}
 }
 
+// 메서드: StartDissolve
+// 역할: Dissolve 효과를 시작하는 함수입니다.
 void ABlasterCharacter::StartDissolve()
 {
 	DissolveTrack.BindDynamic(this, &ABlasterCharacter::UpdateDissolveMaterial);
@@ -1043,6 +1252,8 @@ void ABlasterCharacter::StartDissolve()
 	}
 }
 
+// 메서드: SetOverlappingWeapon
+// 역할: OverlappingWeapon을 설정하는 함수입니다.
 void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 {
 	if (OverlappingWeapon)
@@ -1059,6 +1270,8 @@ void ABlasterCharacter::SetOverlappingWeapon(AWeapon* Weapon)
 	}
 }
 
+// 메서드: OnRep_OverlappingWeapon
+// 역할: OverlappingWeapon이 Replicate되었을 때 호출되는 함수입니다.
 void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 {
 	if (OverlappingWeapon)
@@ -1071,46 +1284,64 @@ void ABlasterCharacter::OnRep_OverlappingWeapon(AWeapon* LastWeapon)
 	}
 }
 
+
+
+// 메서드: IsWeaponEquipped
+// 역할: 무기가 장착되어 있는지 여부를 반환하는 함수입니다.
 bool ABlasterCharacter::IsWeaponEquipped()
 {
 	return (Combat && Combat->EquippedWeapon);
 }
 
+// 메서드: IsAiming
+// 역할: 조준 중인지 여부를 반환하는 함수입니다.
 bool ABlasterCharacter::IsAiming()
 {
 	return (Combat && Combat->bAiming);
 }
 
+// 메서드: GetEquippedWeapon
+// 역할: 현재 장착된 무기를 반환하는 함수입니다.
 AWeapon* ABlasterCharacter::GetEquippedWeapon()
 {
 	if (Combat == nullptr) return nullptr;
 	return Combat->EquippedWeapon;
 }
 
+// 메서드: GetHitTarget
+// 역할: 공격 대상의 위치를 반환하는 함수입니다.
 FVector ABlasterCharacter::GetHitTarget() const
 {
 	if (Combat == nullptr) return FVector();
 	return Combat->HitTarget;
 }
 
+// 메서드: GetCombatState
+// 역할: 전투 상태를 반환하는 함수입니다.
 ECombatState ABlasterCharacter::GetCombatState() const
 {
 	if (Combat == nullptr) return ECombatState::ECS_MAX;
 	return Combat->CombatState;
 }
 
+// 메서드: IsLocallyReloading
+// 역할: 로컬에서 재장전 중인지 여부를 반환하는 함수입니다.
 bool ABlasterCharacter::IsLocallyReloading()
 {
 	if (Combat == nullptr) return false;
 	return Combat->bLocallyReloading;
 }
 
+// 메서드: IsHoldingTheFlag
+// 역할: 깃발을 들고 있는지 여부를 반환하는 함수입니다.
 bool ABlasterCharacter::IsHoldingTheFlag() const
 {
 	if (Combat == nullptr) return false;
 	return Combat->bHoldingTheFlag;
 }
 
+// 메서드: GetTeam
+// 역할: 플레이어의 소속 팀을 반환하는 함수입니다.
 ETeam ABlasterCharacter::GetTeam()
 {
 	BlasterPlayerState = BlasterPlayerState == nullptr ? GetPlayerState<ABlasterPlayerState>() : BlasterPlayerState;
@@ -1118,6 +1349,8 @@ ETeam ABlasterCharacter::GetTeam()
 	return BlasterPlayerState->GetTeam();
 }
 
+// 메서드: SetHoldingTheFlag
+// 역할: 깃발을 들고 있는지 여부를 설정하는 함수입니다.
 void ABlasterCharacter::SetHoldingTheFlag(bool bHolding)
 {
 	if (Combat == nullptr) return;

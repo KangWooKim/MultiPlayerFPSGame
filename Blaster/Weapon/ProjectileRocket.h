@@ -9,28 +9,46 @@
 /**
  * 
  */
+#pragma once
+
 UCLASS()
 class BLASTER_API AProjectileRocket : public AProjectile
 {
-	GENERATED_BODY()
+    GENERATED_BODY()
+
 public:
-	AProjectileRocket();
-	virtual void Destroyed() override;
+    AProjectileRocket();
+
+    // 파괴될 때 호출되는 메서드입니다.
+    virtual void Destroyed() override;
+
 protected:
-	virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
-	virtual void BeginPlay() override;
+    // 충돌 시 호출되는 메서드입니다.
+    // HitComp: 충돌한 원소의 UPrimitiveComponent
+    // OtherActor: 충돌한 다른 액터
+    // OtherComp: 충돌한 다른 액터의 UPrimitiveComponent
+    // NormalImpulse: 충돌 시 가해진 정상적인 충격
+    // Hit: 충돌 결과에 대한 정보
+    virtual void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit) override;
 
-	UPROPERTY(EditAnywhere)
-	USoundCue* ProjectileLoop;
+    // 게임 시작 시 호출되는 메서드입니다.
+    virtual void BeginPlay() override;
 
-	UPROPERTY()
-	UAudioComponent* ProjectileLoopComponent;
+    // 프로젝타일 루프에 사용되는 사운드 큐
+    UPROPERTY(EditAnywhere)
+        USoundCue* ProjectileLoop;
 
-	UPROPERTY(EditAnywhere)
-	USoundAttenuation* LoopingSoundAttenuation;
+    // 프로젝타일 루프에 사용되는 오디오 컴포넌트
+    UPROPERTY()
+        UAudioComponent* ProjectileLoopComponent;
 
-	UPROPERTY(VisibleAnywhere)
-	class URocketMovementComponent* RocketMovementComponent;
+    // 루프 사운드의 소리 감쇠 설정
+    UPROPERTY(EditAnywhere)
+        USoundAttenuation* LoopingSoundAttenuation;
+
+    // 로켓 이동 컴포넌트
+    UPROPERTY(VisibleAnywhere)
+        class URocketMovementComponent* RocketMovementComponent;
 
 private:
 };

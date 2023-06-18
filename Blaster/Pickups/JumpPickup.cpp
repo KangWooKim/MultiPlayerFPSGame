@@ -5,19 +5,32 @@
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Blaster/BlasterComponents/BuffComponent.h"
 
-void AJumpPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	Super::OnSphereOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+void AJumpPickup::OnSphereOverlap(
+    UPrimitiveComponent* OverlappedComponent,  // 이 객체와 겹치는 컴포넌트
+    AActor* OtherActor,  // 이 객체와 겹치는 다른 액터
+    UPrimitiveComponent* OtherComp,  // 이 객체와 겹치는 다른 컴포넌트
+    int32 OtherBodyIndex,  // 겹치는 다른 컴포넌트의 본체 인덱스
+    bool bFromSweep,  // 이 겹침이 스윕 동안 발생했는지 여부
+    const FHitResult& SweepResult  // 스윕 동안 발생한 첫 충돌에 대한 결과
+) {
+    // 부모 클래스의 OnSphereOverlap 메서드를 호출합니다.
+    Super::OnSphereOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);
-	if (BlasterCharacter)
-	{
-		UBuffComponent* Buff = BlasterCharacter->GetBuff();
-		if (Buff)
-		{
-			Buff->BuffJump(JumpZVelocityBuff, JumpBuffTime);
-		}
-	}
+    // 겹치는 다른 액터를 ABlasterCharacter로 변환(캐스팅) 시도합니다.
+    ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);
+    // 성공하면 아래 코드를 실행합니다.
+    if (BlasterCharacter)
+    {
+        // BlasterCharacter의 Buff 컴포넌트를 얻습니다.
+        UBuffComponent* Buff = BlasterCharacter->GetBuff();
+        // Buff 컴포넌트가 있으면 아래 코드를 실행합니다.
+        if (Buff)
+        {
+            // Buff의 점프 능력을 강화합니다.
+            Buff->BuffJump(JumpZVelocityBuff, JumpBuffTime);
+        }
+    }
 
-	Destroy();
+    // 이 객체를 파괴합니다.
+    Destroy();
 }

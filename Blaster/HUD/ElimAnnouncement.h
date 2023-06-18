@@ -10,15 +10,19 @@
  * 
  */
 UCLASS()
+// UElimAnnouncement 클래스는 제거 알림을 표시하는 사용자 위젯입니다.
 class BLASTER_API UElimAnnouncement : public UUserWidget
 {
 	GENERATED_BODY()
 public:
+    // 공격자와 피해자의 이름을 인자로 받아 제거 알림 텍스트를 설정합니다.
 	void SetElimAnnouncementText(FString AttackerName, FString VictimName);
 
+    // UHorizontalBox를 참조하는 변수로 알림 메시지를 포함하는 박스입니다.
 	UPROPERTY(meta = (BindWidget))
 	class UHorizontalBox* AnnouncementBox;
 
+    // UTextBlock을 참조하는 변수로 실제 알림 텍스트를 포함합니다.
 	UPROPERTY(meta = (BindWidget))
 	class UTextBlock* AnnouncementText;
 

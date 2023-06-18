@@ -3,9 +3,9 @@
 UENUM(BlueprintType)
 enum class ETeam : uint8
 {
-	ET_RedTeam UMETA(DisplayName = "RedTeam"),
-	ET_BlueTeam UMETA(DisplayName = "BlueTeam"),
-	ET_NoTeam UMETA(DisplayName = "NoTeam"),
+	ET_RedTeam UMETA(DisplayName = "Red Team"),  // ÆÀ: »¡°£ ÆÀ
+	ET_BlueTeam UMETA(DisplayName = "Blue Team"),  // ÆÀ: ÆÄ¶õ ÆÀ
+	ET_NoTeam UMETA(DisplayName = "No Team"),  // ÆÀ: ¹ÌÁöÁ¤
 
-	ET_MAX UMETA(DisplayName = "DefaultMAX")
+	ET_MAX UMETA(DisplayName = "Default MAX")  // ÆÀ: ±âº» ÃÖ´ë°ª
 };

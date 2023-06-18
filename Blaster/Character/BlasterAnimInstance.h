@@ -1,90 +1,177 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+// UBlasterAnimInstance.h
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "Animation/AnimInstance.h"
-#include "Blaster/BlasterTypes/TurningInPlace.h"
+#include "BlasterCharacter.h"
+#include "Weapon.h"
+#include "BlasterEnums.h"
 #include "BlasterAnimInstance.generated.h"
 
 /**
- * 
+ * 애니메이션 인스턴스 클래스입니다.
  */
 UCLASS()
 class BLASTER_API UBlasterAnimInstance : public UAnimInstance
 {
 	GENERATED_BODY()
+
 public:
+	/**
+	 * 애니메이션 초기화를 수행하는 함수입니다.
+	 */
 	virtual void NativeInitializeAnimation() override;
+
+	/**
+	 * 애니메이션 업데이트를 수행하는 함수입니다.
+	 */
 	virtual void NativeUpdateAnimation(float DeltaTime) override;
 
 private:
-	UPROPERTY(BlueprintReadOnly, Category = Character, meta = (AllowPrivateAccess = "true"))
-	class ABlasterCharacter* BlasterCharacter;
+	/**
+	 * BlasterCharacter의 포인터입니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Character", meta = (AllowPrivateAccess = "true"))
+		ABlasterCharacter* BlasterCharacter;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	float Speed;
+	/**
+	 * 캐릭터의 속도입니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		float Speed;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bIsInAir;
+	/**
+	 * 공중에 있는지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bIsInAir;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bIsAccelerating;
+	/**
+	 * 가속 중인지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bIsAccelerating;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bWeaponEquipped;
+	/**
+	 * 무기가 장착되어 있는지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bWeaponEquipped;
 
+	/**
+	 * 장착된 무기의 포인터입니다.
+	 */
 	class AWeapon* EquippedWeapon;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bIsCrouched;
+	/**
+	 * 앉아 있는지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bIsCrouched;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bAiming;
+	/**
+	 * 조준 중인지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bAiming;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	float YawOffset;
+	/**
+	 * Yaw 각도의 오프셋입니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		float YawOffset;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	float Lean;
+	/**
+	 * Lean 값을 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		float Lean;
 
+	/**
+	 * 이전 프레임의 캐릭터 회전입니다.
+	 */
 	FRotator CharacterRotationLastFrame;
+
+	/**
+	 * 현재 프레임의 캐릭터 회전입니다.
+	 */
 	FRotator CharacterRotation;
+
+	/**
+	 * 회전 변화량입니다.
+	 */
 	FRotator DeltaRotation;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	float AO_Yaw;
+	/**
+	 * Yaw 각도입니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		float AO_Yaw;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	float AO_Pitch;
+	/**
+	 * Pitch 각도입니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		float AO_Pitch;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	FTransform LeftHandTransform;
+	/**
+	 * 왼쪽 손의 변환 정보입니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		FTransform LeftHandTransform;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	ETurningInPlace TurningInPlace;
+	/**
+	 * 제자리에서 회전하는 동작 상태입니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		ETurningInPlace TurningInPlace;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	FRotator RightHandRotation;
+	/**
+	 * 오른쪽 손의 회전입니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		FRotator RightHandRotation;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bLocallyControlled;
+	/**
+	 * 로컬 컨트롤을 하는지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bLocallyControlled;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bRotateRootBone;
+	/**
+	 * 루트 본을 회전하는지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bRotateRootBone;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bElimmed;
+	/**
+	 * 제거된 상태인지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bElimmed;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bUseFABRIK;
+	/**
+	 * FABRIK를 사용하는지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bUseFABRIK;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bUseAimOffsets;
+	/**
+	 * Aim Offset을 사용하는지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bUseAimOffsets;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bTransformRightHand;
+	/**
+	 * 오른쪽 손을 변환하는지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bTransformRightHand;
 
-	UPROPERTY(BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	bool bHoldingTheFlag;
+	/**
+	 * 깃발을 들고 있는지 여부를 나타냅니다.
+	 */
+	UPROPERTY(BlueprintReadOnly, Category = "Movement", meta = (AllowPrivateAccess = "true"))
+		bool bHoldingTheFlag;
 };

@@ -5,18 +5,30 @@
 #include "Blaster/Character/BlasterCharacter.h"
 #include "Blaster/BlasterComponents/CombatComponent.h"
 
-void AAmmoPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AAmmoPickup::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, // 이 컴포넌트와 충돌이 발생한 컴포넌트
+    AActor* OtherActor, // 이 컴포넌트와 충돌한 다른 액터
+    UPrimitiveComponent* OtherComp, // 충돌이 발생한 다른 컴포넌트
+    int32 OtherBodyIndex, // 충돌한 다른 컴포넌트의 본체 인덱스
+    bool bFromSweep, // 이 충돌이 스윕(sweep: 오브젝트가 움직이면서 경로상에 있는 모든 오브젝트와의 충돌을 감지하는 방법)으로부터 발생한 것인지를 나타냄
+    const FHitResult& SweepResult) // 스윕 동안 발생한 첫 번째 충돌에 대한 결과
 {
-	Super::OnSphereOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+    // 부모 클래스의 OnSphereOverlap 메서드를 호출합니다.
+    Super::OnSphereOverlap(OverlappedComponent, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
 
-	ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);
-	if (BlasterCharacter)
-	{
-		UCombatComponent* Combat = BlasterCharacter->GetCombat();
-		if (Combat)
-		{
-			Combat->PickupAmmo(WeaponType, AmmoAmount);
-		}
-	}
-	Destroy();
+    // OtherActor를 ABlasterCharacter로 캐스팅합니다.
+    // 캐스팅 결과가 유효한 경우에만 아래 로직을 수행합니다.
+    ABlasterCharacter* BlasterCharacter = Cast<ABlasterCharacter>(OtherActor);
+    if (BlasterCharacter)
+    {
+        // BlasterCharacter의 Combat 컴포넌트를 가져옵니다.
+        // Combat 컴포넌트가 유효한 경우에만 아래 로직을 수행합니다.
+        UCombatComponent* Combat = BlasterCharacter->GetCombat();
+        if (Combat)
+        {
+            // Combat 컴포넌트에 탄약을 더해줍니다.
+            Combat->PickupAmmo(WeaponType, AmmoAmount);
+        }
+    }
+    // 탄약을 주운 후에는 탄약 픽업 객체를 파괴합니다.
+    Destroy();
 }
