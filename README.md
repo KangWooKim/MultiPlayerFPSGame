@@ -1,3 +1,1 @@
-# 각 메서드에 대해서...
 
-Blaster하위 폴더인 BlasterComponents, BlasterTypes.. 등등 폴더 안에 있는 README.md 파일을 참조하시면 해당 파일에 있는 헤더 파일에 있는 메서드에 대한 설명이 적혀있습니다.
